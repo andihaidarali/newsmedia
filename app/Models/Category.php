@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\HasSlug;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Category extends Model
+{
+    use HasFactory, HasSlug;
+
+    /**
+     * The attribute used to generate the slug.
+     */
+    protected string $slugSource = 'name';
+
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'parent_id',
+        'sort_order',
+    ];
+
+    // ──────────────────────────────────────────────
+    // Relationships
+    // ──────────────────────────────────────────────
+
+    /**
+     * Get the posts belonging to this category.
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
+     * Get the parent category.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    /**
+     * Get the child categories.
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    /**
+     * Get all descendants recursively.
+     */
+    public function descendants(): HasMany
+    {
+        return $this->children()->with('descendants');
+    }
+}
