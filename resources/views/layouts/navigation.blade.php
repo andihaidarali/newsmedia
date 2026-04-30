@@ -18,9 +18,11 @@
                     <x-nav-link :href="route('admin.posts.index')" :active="request()->routeIs('admin.posts.*')">
                         {{ __('Posts') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('admin.advertorials.index')" :active="request()->routeIs('admin.advertorials.*')">
-                        {{ __('Advertorials') }}
-                    </x-nav-link>
+                    @if (auth()->user()->canAccessAdminAdvertorials())
+                        <x-nav-link :href="route('admin.advertorials.index')" :active="request()->routeIs('admin.advertorials.*')">
+                            {{ __('Advertorials') }}
+                        </x-nav-link>
+                    @endif
                     <x-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                         {{ __('Categories') }}
                     </x-nav-link>
@@ -90,9 +92,11 @@
             <x-responsive-nav-link :href="route('admin.posts.index')" :active="request()->routeIs('admin.posts.*')">
                 {{ __('Posts') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('admin.advertorials.index')" :active="request()->routeIs('admin.advertorials.*')">
-                {{ __('Advertorials') }}
-            </x-responsive-nav-link>
+            @if (auth()->user()->canAccessAdminAdvertorials())
+                <x-responsive-nav-link :href="route('admin.advertorials.index')" :active="request()->routeIs('admin.advertorials.*')">
+                    {{ __('Advertorials') }}
+                </x-responsive-nav-link>
+            @endif
             <x-responsive-nav-link :href="route('admin.categories.index')" :active="request()->routeIs('admin.categories.*')">
                 {{ __('Categories') }}
             </x-responsive-nav-link>
