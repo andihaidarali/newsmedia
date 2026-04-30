@@ -60,7 +60,7 @@ class PostController extends Controller
     {
         Gate::authorize('create', Post::class);
 
-        $categories = Category::orderBy('sort_order')->get();
+        $categories = $this->postCategories();
         $advertorials = Advertorial::orderByDesc('starts_at')
             ->orderBy('name')
             ->get();
@@ -202,7 +202,7 @@ class PostController extends Controller
     {
         Gate::authorize('update', $post);
 
-        $categories = Category::orderBy('sort_order')->get();
+        $categories = $this->postCategories();
         $advertorials = Advertorial::orderByDesc('starts_at')
             ->orderBy('name')
             ->get();
@@ -452,5 +452,19 @@ class PostController extends Controller
         $data['published_at'] = null;
 
         return $data;
+    }
+
+    private function postCategories()
+    {
+        return Category::query()
+            ->with([
+                'children' => fn ($query) => $query->orderBy('sort_order')->orderBy('name'),
+                'children.children' => fn ($query) => $query->orderBy('sort_order')->orderBy('name'),
+                'children.children.children' => fn ($query) => $query->orderBy('sort_order')->orderBy('name'),
+            ])
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 }

@@ -14,6 +14,61 @@ window.$ = window.jQuery = jQuery;
 select2(window, jQuery);
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-load-more-container]').forEach((container) => {
+        const list = container.querySelector('[data-load-more-list]');
+        const button = container.querySelector('[data-load-more-button]');
+
+        if (! list || ! button) {
+            return;
+        }
+
+        let nextUrl = button.dataset.nextUrl;
+        const defaultLabel = button.textContent.trim();
+
+        button.addEventListener('click', async () => {
+            if (! nextUrl || button.disabled) {
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'Loading...';
+
+            try {
+                const response = await fetch(nextUrl, {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (! response.ok) {
+                    throw new Error('Failed to load more posts.');
+                }
+
+                const payload = await response.json();
+
+                if (payload.html) {
+                    list.insertAdjacentHTML('beforeend', payload.html);
+                }
+
+                nextUrl = payload.next_page_url;
+
+                if (! nextUrl) {
+                    button.remove();
+                    return;
+                }
+
+                button.dataset.nextUrl = nextUrl;
+                button.disabled = false;
+                button.textContent = defaultLabel;
+            } catch (error) {
+                console.error(error);
+                button.disabled = false;
+                button.textContent = defaultLabel;
+            }
+        });
+    });
+
     document.querySelectorAll('form').forEach((form) => {
         const statusSelect = form.querySelector('[data-status-selector]');
         const publishDateInput = form.querySelector('[data-publish-date-input]');
@@ -114,9 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const chartData = JSON.parse(rawData);
+        const chartType = chartData.type || 'line';
+        delete chartData.type;
 
         new Chart(canvas, {
-            type: 'line',
+            type: chartType,
             data: chartData,
             options: {
                 responsive: true,
@@ -131,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         labels: {
                             boxWidth: 12,
                             boxHeight: 12,
-                            usePointStyle: true,
+                            usePointStyle: chartType !== 'bar',
                         },
                     },
                 },

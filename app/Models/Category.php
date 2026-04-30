@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Category extends Model
 {
@@ -62,5 +63,35 @@ class Category extends Model
     public function descendants(): HasMany
     {
         return $this->children()->with('descendants');
+    }
+
+    public function ancestorsAndSelf(): Collection
+    {
+        $ancestors = collect();
+        $category = $this;
+
+        while ($category) {
+            $ancestors->prepend($category);
+            $category = $category->parent;
+        }
+
+        return $ancestors;
+    }
+
+    public function slugPath(): string
+    {
+        return $this->ancestorsAndSelf()
+            ->pluck('slug')
+            ->filter()
+            ->implode('/');
+    }
+
+    public function descendantsAndSelf(): Collection
+    {
+        return collect([$this])
+            ->merge(
+                $this->children->flatMap(fn (Category $child) => $child->descendantsAndSelf())
+            )
+            ->values();
     }
 }

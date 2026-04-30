@@ -231,6 +231,39 @@ it('shows the status input only for editors and administrators', function () {
         ->assertDontSee('Status');
 });
 
+it('shows a hierarchical category select and stores the selected child category', function () {
+    $editor = User::factory()->editor()->create();
+    $parentCategory = Category::factory()->create(['name' => 'News']);
+    $childCategory = Category::factory()->create([
+        'name' => 'Politics',
+        'parent_id' => $parentCategory->id,
+    ]);
+
+    $this->actingAs($editor)
+        ->get(route('admin.posts.create'))
+        ->assertOk()
+        ->assertSee('Category')
+        ->assertDontSee('Parent Category')
+        ->assertDontSee('Subcategory')
+        ->assertSee('News')
+        ->assertSee('Politics')
+        ->assertSee('- News')
+        ->assertSee('-- Politics');
+
+    $this->actingAs($editor)
+        ->post(route('admin.posts.store'), [
+            'title' => 'Hierarchical Category Post',
+            'body' => 'Post using a subcategory.',
+            'status' => 'draft',
+            'category_id' => $childCategory->id,
+        ])
+        ->assertRedirect(route('admin.posts.index'));
+
+    $post = Post::where('title', 'Hierarchical Category Post')->firstOrFail();
+
+    expect($post->category_id)->toBe($childCategory->id);
+});
+
 it('allows editors to add manual writer names while recording themselves automatically', function () {
     $editor = User::factory()->editor()->create(['name' => 'News Editor']);
 

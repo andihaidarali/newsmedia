@@ -79,9 +79,17 @@
                             @forelse ($posts as $post)
                                 <tr>
                                     <td class="px-5 py-4">
-                                        <div class="font-medium text-gray-900 dark:text-gray-100">{{ $post->title }}</div>
-                                        <div class="mt-1 text-sm text-gray-500">
-                                            {{ $post->category?->name ?? 'Uncategorized' }} / {{ $post->slug }}
+                                        <div class="flex items-start gap-4">
+                                            @php($postPreviewImage = $post->featured_image_url ?: $currentSiteSetting?->defaultFeaturedImageUrl())
+                                            @if ($postPreviewImage)
+                                                <img src="{{ $postPreviewImage }}" alt="{{ $post->title }}" class="h-16 w-24 rounded-md border border-gray-200 object-cover">
+                                            @endif
+                                            <div>
+                                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $post->title }}</div>
+                                                <div class="mt-1 text-sm text-gray-500">
+                                                    {{ $post->category?->name ?? 'Uncategorized' }} / {{ $post->slug }}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-5 py-4">

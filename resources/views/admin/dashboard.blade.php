@@ -21,9 +21,9 @@
 
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Post Bulan Ini</div>
-                    <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{{ number_format($stats['total_posts_this_month']) }}</div>
-                    <div class="mt-3 text-sm text-gray-500">{{ now()->translatedFormat('F Y') }}</div>
+                    <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Post Dipublikasikan</div>
+                    <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{{ number_format($stats['published_posts_in_period']) }}</div>
+                    <div class="mt-3 text-sm text-gray-500">{{ $filterLabel }}</div>
                 </div>
 
                 <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -49,7 +49,7 @@
                 <div class="flex flex-col gap-4 border-b border-gray-200 px-5 py-4 dark:border-gray-700 lg:flex-row lg:items-end lg:justify-between">
                     <div>
                         <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Filter Produksi Bulanan</h2>
-                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Filter ini dipakai untuk tabel editor dan reporter.</p>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Filter ini dipakai untuk kartu published posts, tabel editor, dan tabel reporter.</p>
                     </div>
 
                     <form method="GET" action="{{ route('admin.dashboard') }}" class="grid gap-3 sm:grid-cols-[12rem_12rem_auto]">
@@ -78,6 +78,20 @@
                             <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">Reset</a>
                         </div>
                     </form>
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Grafik Total Post 12 Bulan</h2>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Jumlah total post yang dipublikasikan per bulan selama 12 bulan terakhir.</p>
+                </div>
+                <div class="h-80 px-5 py-5">
+                    <canvas
+                        data-line-chart
+                        data-chart='@json($overallPostsChart)'
+                        aria-label="Overall published posts chart"
+                    ></canvas>
                 </div>
             </section>
 

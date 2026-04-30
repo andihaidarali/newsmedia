@@ -72,7 +72,7 @@
                             <select id="category_id" name="category_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                                 <option value="">Uncategorized</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" @selected((string) old('category_id', $post->category_id) === (string) $category->id)>{{ $category->name }}</option>
+                                    @include('admin.posts.partials.category-option', ['category' => $category, 'selectedCategoryId' => old('category_id', $post->category_id)])
                                 @endforeach
                             </select>
                             <x-input-error :messages="$errors->get('category_id')" class="mt-2" />

@@ -22,10 +22,10 @@ class DashboardController extends Controller
         $selectedYear = $request->integer('year') ?: now()->year;
 
         $stats = [
-            'total_posts_this_month' => Post::query()
+            'published_posts_in_period' => Post::query()
                 ->whereNotNull('published_at')
-                ->whereMonth('published_at', now()->month)
-                ->whereYear('published_at', now()->year)
+                ->whereMonth('published_at', $selectedMonth)
+                ->whereYear('published_at', $selectedYear)
                 ->count(),
             'draft_posts' => Post::draft()->count(),
             'active_advertorials' => Advertorial::query()
@@ -76,6 +76,13 @@ class DashboardController extends Controller
             ->map(fn (int $offset) => $rangeStart->copy()->addMonths($offset))
             ->values();
 
+        $overallMonthlyCounts = Post::query()
+            ->selectRaw('strftime("%Y-%m", published_at) as period, count(*) as aggregate')
+            ->whereNotNull('published_at')
+            ->whereDate('published_at', '>=', $rangeStart->toDateString())
+            ->groupBy('period')
+            ->pluck('aggregate', 'period');
+
         $monthlyCounts = PostAuthor::query()
             ->selectRaw('post_authors.user_id, strftime("%Y-%m", posts.published_at) as period, count(distinct post_authors.post_id) as aggregate')
             ->join('posts', 'posts.id', '=', 'post_authors.post_id')
@@ -114,6 +121,21 @@ class DashboardController extends Controller
             'datasets' => $buildChartDatasets($reporterRows, 18),
         ];
 
+        $overallPostsChart = [
+            'type' => 'bar',
+            'labels' => $monthLabels->map(fn (Carbon $month) => $month->translatedFormat('M Y'))->all(),
+            'datasets' => [[
+                'label' => 'Total Published Posts',
+                'data' => $monthLabels
+                    ->map(fn (Carbon $month) => (int) ($overallMonthlyCounts[$month->format('Y-m')] ?? 0))
+                    ->all(),
+                'borderColor' => 'hsl(198 82% 42%)',
+                'backgroundColor' => 'hsla(198 82% 42% / 0.8)',
+                'borderWidth' => 1,
+                'borderRadius' => 6,
+            ]],
+        ];
+
         $years = Post::query()
             ->selectRaw('strftime("%Y", published_at) as year')
             ->whereNotNull('published_at')
@@ -128,8 +150,10 @@ class DashboardController extends Controller
                 'month' => $selectedMonth,
                 'year' => $selectedYear,
             ],
+            'filterLabel' => Carbon::create()->month($selectedMonth)->translatedFormat('F').' '.$selectedYear,
             'editorChart' => $editorChart,
             'editorRows' => $editorRows,
+            'overallPostsChart' => $overallPostsChart,
             'reporterChart' => $reporterChart,
             'reporterRows' => $reporterRows,
             'stats' => $stats,

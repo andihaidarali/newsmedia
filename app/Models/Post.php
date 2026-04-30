@@ -113,6 +113,21 @@ class Post extends Model
         );
     }
 
+    protected function categoryPath(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->category?->slugPath(),
+        );
+    }
+
+    public function publicUrl(): string
+    {
+        return route('posts.show', [
+            'categoryPath' => $this->category_path,
+            'post' => $this,
+        ]);
+    }
+
     // ──────────────────────────────────────────────
     // Scopes
     // ──────────────────────────────────────────────

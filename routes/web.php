@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AdBannerController as AdminAdBannerController;
 use App\Http\Controllers\Admin\AdvertorialController as AdminAdvertorialController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MediaController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
+use App\Http\Controllers\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\CategoryController;
@@ -19,7 +21,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PostController::class, 'index'])->name('home');
 Route::get('/blog', [PostController::class, 'index'])->name('posts.index');
-Route::get('/blog/{post:slug}', [PostController::class, 'show'])->name('posts.show');
 Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
 
@@ -32,7 +33,11 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->name('admin.')->group(
 
     Route::resource('posts', AdminPostController::class)->except('show');
     Route::resource('advertorials', AdminAdvertorialController::class);
+    Route::get('ad-banners', [AdminAdBannerController::class, 'edit'])->name('ad-banners.edit');
+    Route::put('ad-banners', [AdminAdBannerController::class, 'update'])->name('ad-banners.update');
     Route::resource('categories', AdminCategoryController::class)->except('show');
+    Route::get('site-settings', [AdminSiteSettingController::class, 'edit'])->name('site-settings.edit');
+    Route::put('site-settings', [AdminSiteSettingController::class, 'update'])->name('site-settings.update');
     Route::resource('tags', AdminTagController::class)->except('show');
     Route::resource('users', AdminUserController::class)->except('show');
 
@@ -55,3 +60,7 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/{categoryPath}/{post:slug}', [PostController::class, 'show'])
+    ->where('categoryPath', '.*')
+    ->name('posts.show');

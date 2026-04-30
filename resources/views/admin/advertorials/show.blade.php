@@ -67,7 +67,7 @@
                             @forelse ($advertorial->posts as $post)
                                 <tr>
                                     <td class="px-5 py-4">
-                                        <a href="{{ route('posts.show', $post) }}" class="font-medium text-indigo-600 hover:text-indigo-700" target="_blank" rel="noreferrer">
+                                        <a href="{{ $post->publicUrl() }}" class="font-medium text-indigo-600 hover:text-indigo-700" target="_blank" rel="noreferrer">
                                             {{ $post->title }}
                                         </a>
                                     </td>

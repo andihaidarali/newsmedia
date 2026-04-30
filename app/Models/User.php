@@ -54,6 +54,11 @@ class User extends Authenticatable
         return $this->isEditor();
     }
 
+    public function canAccessAdminBanners(): bool
+    {
+        return $this->isEditor();
+    }
+
     public function isLoginAllowed(): bool
     {
         return $this->isAdministrator() || $this->is_active;

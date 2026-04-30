@@ -136,10 +136,12 @@ it('shows dashboard statistics, split production tables, and yearly performance 
     ]));
 
     $response->assertOk();
-    $response->assertSeeInOrder(['Total Post Bulan Ini', '3']);
+    $response->assertSeeInOrder(['Total Post Dipublikasikan', '3']);
+    $response->assertSee('April 2026');
     $response->assertSeeInOrder(['Drafts', '1']);
     $response->assertSeeInOrder(['Advertorial Aktif', '1']);
     $response->assertSeeInOrder(['Jumlah Users', '4']);
+    $response->assertSee('Grafik Total Post 12 Bulan');
     $response->assertSee('Grafik Editor 12 Bulan');
     $response->assertSee('Grafik Reporter 12 Bulan');
     $response->assertSee('Tabel Editor');
