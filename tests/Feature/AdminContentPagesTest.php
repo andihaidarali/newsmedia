@@ -455,6 +455,20 @@ it('can create each supported post type', function () {
     expect(Post::where('title', 'Infographic Post')->firstOrFail()->infographic_image)->not->toBeNull();
 });
 
+it('can mark a post as breaking news from the post form', function () {
+    $editor = User::factory()->editor()->create();
+
+    $this->actingAs($editor)->post(route('admin.posts.store'), [
+        'title' => 'Breaking News Post',
+        'body' => '<p>Breaking content</p>',
+        'type' => 'article',
+        'status' => 'draft',
+        'breaking_news' => '1',
+    ])->assertRedirect(route('admin.posts.index'));
+
+    expect(Post::where('title', 'Breaking News Post')->firstOrFail()->breaking_news)->toBeTrue();
+});
+
 it('allows editing an infographic post without re-uploading the infographic image', function () {
     Storage::fake('public');
 

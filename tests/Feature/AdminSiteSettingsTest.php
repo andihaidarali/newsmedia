@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Category;
+use App\Models\Post;
 use App\Models\SiteSetting;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -50,6 +52,10 @@ it('allows administrators to update site settings', function () {
         'site_logo' => UploadedFile::fake()->image('logo.png'),
         'site_favicon' => UploadedFile::fake()->image('favicon.png'),
         'default_featured_image' => UploadedFile::fake()->image('default-featured.png'),
+        'social_links' => [
+            ['platform' => 'facebook', 'url' => 'https://facebook.com/newsportal'],
+            ['platform' => 'youtube', 'url' => 'https://youtube.com/@newsportal'],
+        ],
     ]);
 
     $response->assertRedirect(route('admin.site-settings.edit'));
@@ -62,6 +68,9 @@ it('allows administrators to update site settings', function () {
     expect($setting->site_logo)->not->toBeNull();
     expect($setting->site_favicon)->not->toBeNull();
     expect($setting->default_featured_image)->not->toBeNull();
+    expect($setting->social_links)->toHaveCount(2);
+    expect($setting->social_links[0]['platform'])->toBe('facebook');
+    expect($setting->social_links[1]['url'])->toBe('https://youtube.com/@newsportal');
 });
 
 it('applies site settings to the admin layout', function () {
@@ -80,4 +89,33 @@ it('applies site settings to the admin layout', function () {
         ->assertSee('News Portal Admin')
         ->assertSee('Editorial Desk')
         ->assertSee('site-settings/favicon/test.png');
+});
+
+it('renders configured social media links in the public layout', function () {
+    $category = Category::factory()->create([
+        'name' => 'News',
+        'slug' => 'news',
+    ]);
+    $user = User::factory()->create();
+
+    SiteSetting::query()->create([
+        'site_title' => 'News Portal',
+        'social_links' => [
+            ['platform' => 'facebook', 'url' => 'https://facebook.com/newsportal'],
+            ['platform' => 'instagram', 'url' => 'https://instagram.com/newsportal'],
+        ],
+    ]);
+
+    Post::factory()->published()->create([
+        'user_id' => $user->id,
+        'category_id' => $category->id,
+        'title' => 'Public Social Link Post',
+    ]);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('https://facebook.com/newsportal')
+        ->assertSee('https://instagram.com/newsportal')
+        ->assertSee('Facebook')
+        ->assertSee('Instagram');
 });

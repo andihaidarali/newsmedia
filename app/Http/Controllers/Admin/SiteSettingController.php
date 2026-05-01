@@ -47,6 +47,11 @@ class SiteSettingController extends Controller
             $data[$field] = $request->file($field)->store($directory, 'public');
         }
 
+        $data['social_links'] = collect($data['social_links'] ?? [])
+            ->filter(fn ($link) => filled($link['platform'] ?? null) && filled($link['url'] ?? null))
+            ->values()
+            ->all();
+
         $siteSetting->update($data);
 
         return redirect()

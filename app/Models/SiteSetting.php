@@ -17,7 +17,15 @@ class SiteSetting extends Model
         'site_logo',
         'site_favicon',
         'default_featured_image',
+        'social_links',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'social_links' => 'array',
+        ];
+    }
 
     public static function current(): self
     {
@@ -37,5 +45,33 @@ class SiteSetting extends Model
     public function defaultFeaturedImageUrl(): ?string
     {
         return $this->default_featured_image ? Storage::disk('public')->url($this->default_featured_image) : null;
+    }
+
+    public function socialLinks(): array
+    {
+        return collect($this->social_links ?? [])
+            ->filter(fn ($link) => filled($link['platform'] ?? null) && filled($link['url'] ?? null))
+            ->map(fn ($link) => [
+                'platform' => (string) $link['platform'],
+                'label' => $this->socialPlatformLabel((string) $link['platform']),
+                'url' => (string) $link['url'],
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function socialPlatformLabel(string $platform): string
+    {
+        return match ($platform) {
+            'facebook' => 'Facebook',
+            'instagram' => 'Instagram',
+            'youtube' => 'YouTube',
+            'x' => 'X',
+            'tiktok' => 'TikTok',
+            'linkedin' => 'LinkedIn',
+            'telegram' => 'Telegram',
+            'whatsapp' => 'WhatsApp',
+            default => ucfirst($platform),
+        };
     }
 }

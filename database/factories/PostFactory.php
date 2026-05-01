@@ -33,6 +33,7 @@ class PostFactory extends Factory
             'excerpt' => fake()->paragraph(2),
             'body' => $this->generateBody(),
             'featured_image' => null,
+            'breaking_news' => false,
             'youtube_url' => null,
             'gallery_images' => null,
             'infographic_image' => null,

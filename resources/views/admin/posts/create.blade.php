@@ -54,6 +54,15 @@
                             <x-input-error :messages="$errors->get('featured_image')" class="mt-2" />
                         </div>
 
+                        <label class="flex items-start gap-3 rounded-md border border-gray-200 px-4 py-3 text-sm dark:border-gray-700">
+                            <input id="breaking_news" name="breaking_news" type="checkbox" value="1" @checked(old('breaking_news')) class="mt-0.5 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                            <span>
+                                <span class="block font-medium text-gray-900 dark:text-gray-100">Breaking News</span>
+                                <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">Tampilkan post ini di hero slider homepage.</span>
+                            </span>
+                        </label>
+                        <x-input-error :messages="$errors->get('breaking_news')" class="mt-2" />
+
                         <div>
                             <div class="flex items-center justify-between gap-3">
                                 <x-input-label for="category_id" value="Category" />

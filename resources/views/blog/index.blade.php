@@ -67,6 +67,7 @@
                     <div class="relative" x-on:touchstart.passive="handleTouchStart($event)" x-on:touchend.passive="handleTouchEnd($event)">
                         @foreach ($headlinePosts as $post)
                             <article
+                                data-breaking-hero-slide
                                 x-show="currentSlide === {{ $loop->index }}"
                                 x-transition:enter="transition ease-out duration-500"
                                 x-transition:enter-start="opacity-0 scale-[1.02]"

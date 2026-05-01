@@ -29,6 +29,7 @@ class Post extends Model
         'excerpt',
         'body',
         'featured_image',
+        'breaking_news',
         'youtube_url',
         'gallery_images',
         'infographic_image',
@@ -46,6 +47,7 @@ class Post extends Model
         return [
             'published_at' => 'datetime',
             'gallery_images' => 'array',
+            'breaking_news' => 'boolean',
         ];
     }
 

@@ -13,6 +13,7 @@ class StorePostRequest extends FormRequest
     {
         $this->merge([
             'type' => $this->input('type', 'article'),
+            'breaking_news' => $this->boolean('breaking_news'),
         ]);
     }
 
@@ -49,6 +50,7 @@ class StorePostRequest extends FormRequest
             'tags.*' => ['string', 'max:255'],
             'new_tags' => ['nullable', 'string', 'max:1000'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'breaking_news' => ['nullable', 'boolean'],
             'youtube_url' => ['required_if:type,video', 'nullable', 'url', 'max:2048'],
             'gallery_images' => ['required_if:type,gallery', 'nullable', 'array'],
             'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],

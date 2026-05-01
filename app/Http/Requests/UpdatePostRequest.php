@@ -13,6 +13,7 @@ class UpdatePostRequest extends FormRequest
     {
         $this->merge([
             'type' => $this->input('type', 'article'),
+            'breaking_news' => $this->boolean('breaking_news'),
         ]);
     }
 
@@ -51,6 +52,7 @@ class UpdatePostRequest extends FormRequest
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:255'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
+            'breaking_news' => ['nullable', 'boolean'],
             'youtube_url' => [
                 Rule::requiredIf(fn () => $this->input('type') === 'video' && blank($post?->youtube_url)),
                 'nullable',

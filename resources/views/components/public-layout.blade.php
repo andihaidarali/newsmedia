@@ -24,6 +24,7 @@
     $brandName = $currentSiteSetting?->site_title ?: config('app.name', 'Laravel');
     $brandSubtitle = $currentSiteSetting?->subtitle ?: 'Portal Berita Digital Terkini';
     $brandDescription = $currentSiteSetting?->site_description ?: 'Portal berita digital terdepan dengan kabar cepat, akurat, dan terpercaya.';
+    $socialLinks = collect($currentSiteSetting?->socialLinks() ?? []);
     $currentPath = trim(request()->path(), '/');
 @endphp
 
@@ -58,11 +59,15 @@
                     <span class="opacity-30">|</span>
                     <span class="opacity-70">{{ $brandSubtitle }}</span>
                 </div>
-                <div class="hidden items-center gap-3 md:flex">
-                    <span class="opacity-60">Facebook</span>
-                    <span class="opacity-60">Instagram</span>
-                    <span class="opacity-60">YouTube</span>
-                </div>
+                @if ($socialLinks->isNotEmpty())
+                    <div class="hidden items-center gap-3 md:flex">
+                        @foreach ($socialLinks as $socialLink)
+                            <a href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer" class="opacity-60 transition hover:opacity-100">
+                                {{ $socialLink['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -252,11 +257,15 @@
                         <h4 class="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--color-primary)]">Kontak</h4>
                         <p class="mb-1 text-sm text-gray-400">Email: redaksi@example.com</p>
                         <p class="mb-3 text-sm text-gray-400">{{ $brandSubtitle }}</p>
-                        <div class="flex items-center gap-3 text-sm text-gray-400">
-                            <span>Facebook</span>
-                            <span>Instagram</span>
-                            <span>YouTube</span>
-                        </div>
+                        @if ($socialLinks->isNotEmpty())
+                            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-400">
+                                @foreach ($socialLinks as $socialLink)
+                                    <a href="{{ $socialLink['url'] }}" target="_blank" rel="noopener noreferrer" class="transition hover:text-white">
+                                        {{ $socialLink['label'] }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
 

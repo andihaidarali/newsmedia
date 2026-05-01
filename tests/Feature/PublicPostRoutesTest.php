@@ -413,3 +413,39 @@ it('shows visual media overlays for video and gallery cards on the homepage', fu
         ->assertSee('aria-label="Play video"', false)
         ->assertSee('aria-label="Open gallery"', false);
 });
+
+it('renders the homepage hero slider from the latest breaking news posts only', function () {
+    $user = User::factory()->create();
+    $category = Category::factory()->create([
+        'name' => 'News',
+        'slug' => 'news',
+    ]);
+
+    $breakingTitles = collect(range(1, 6))->map(function (int $index) use ($user, $category) {
+        return Post::factory()->published()->create([
+            'user_id' => $user->id,
+            'category_id' => $category->id,
+            'title' => "Breaking Hero {$index}",
+            'breaking_news' => true,
+            'published_at' => now()->subMinutes($index),
+        ])->title;
+    });
+
+    Post::factory()->published()->create([
+        'user_id' => $user->id,
+        'category_id' => $category->id,
+        'title' => 'Regular Non Breaking Post',
+        'breaking_news' => false,
+    ]);
+
+    $response = $this->get(route('home'));
+
+    $response->assertOk()
+        ->assertSee('Previous headline');
+
+    expect(substr_count($response->getContent(), 'data-breaking-hero-slide'))->toBe(5);
+
+    foreach ($breakingTitles->take(5) as $title) {
+        $response->assertSee($title);
+    }
+});

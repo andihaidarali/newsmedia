@@ -51,16 +51,16 @@ class PostController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
-        $headlinePosts = Post::published()
-            ->with(['author', 'category.parent', 'tags'])
-            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
-                $query->where('title', 'like', "%{$search}%")
-                    ->orWhere('excerpt', 'like', "%{$search}%")
-                    ->orWhere('body', 'like', "%{$search}%");
-            }))
-            ->latest('published_at')
-            ->limit(5)
-            ->get();
+        $headlinePosts = collect();
+
+        if ($search === '') {
+            $headlinePosts = Post::published()
+                ->where('breaking_news', true)
+                ->with(['author', 'category.parent', 'tags'])
+                ->latest('published_at')
+                ->limit(5)
+                ->get();
+        }
 
         $headlinePost = $headlinePosts->first();
 
