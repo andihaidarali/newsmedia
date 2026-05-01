@@ -20,8 +20,12 @@ class CategoryController extends Controller
     /**
      * Display posts filtered by category.
      */
-    public function show(Request $request, Category $category)
+    public function show(Request $request, string $categoryPath)
     {
+        $category = Category::findBySlugPath($categoryPath);
+
+        abort_unless($category, 404);
+
         $category->load('descendants');
 
         $posts = Post::published()

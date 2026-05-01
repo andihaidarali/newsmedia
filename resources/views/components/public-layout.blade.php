@@ -2,14 +2,17 @@
     'title' => null,
     'description' => null,
     'latestPosts' => null,
+    'image' => null,
 ])
 
 @php
     $resolvedTitle = $title ?: ($currentSiteSetting?->site_title ?: config('app.name', 'Laravel'));
     $resolvedDescription = $description ?: ($currentSiteSetting?->site_description ?: 'Berita terbaru dan artikel pilihan.');
+    $resolvedImage = $image ?: $currentSiteSetting?->defaultFeaturedImageUrl();
     $layoutNavigationCategories = $navigationCategories ?? (
         \Illuminate\Support\Facades\Schema::hasTable('categories')
             ? \App\Models\Category::query()
+                ->with('descendants')
                 ->whereNull('parent_id')
                 ->orderBy('sort_order')
                 ->orderBy('name')
@@ -21,6 +24,7 @@
     $brandName = $currentSiteSetting?->site_title ?: config('app.name', 'Laravel');
     $brandSubtitle = $currentSiteSetting?->subtitle ?: 'Portal Berita Digital Terkini';
     $brandDescription = $currentSiteSetting?->site_description ?: 'Portal berita digital terdepan dengan kabar cepat, akurat, dan terpercaya.';
+    $currentPath = trim(request()->path(), '/');
 @endphp
 
 <!DOCTYPE html>
@@ -30,6 +34,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ $resolvedTitle }}</title>
         <meta name="description" content="{{ $resolvedDescription }}">
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="{{ $resolvedTitle }}">
+        <meta property="og:description" content="{{ $resolvedDescription }}">
+        <meta property="og:url" content="{{ request()->fullUrl() }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $resolvedTitle }}">
+        <meta name="twitter:description" content="{{ $resolvedDescription }}">
+        @if ($resolvedImage)
+            <meta property="og:image" content="{{ $resolvedImage }}">
+            <meta name="twitter:image" content="{{ $resolvedImage }}">
+        @endif
         @if ($currentSiteSetting?->siteFaviconUrl())
             <link rel="icon" href="{{ $currentSiteSetting->siteFaviconUrl() }}">
         @endif
@@ -107,13 +122,72 @@
                     </div>
                 </div>
 
-                <nav class="hidden items-center gap-0.5 overflow-x-auto md:flex">
-                    <a href="{{ route('home') }}" class="border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap transition-colors {{ request()->routeIs('home') ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">Beranda</a>
-                    <a href="{{ route('posts.index') }}" class="border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap transition-colors {{ request()->routeIs('posts.index') ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">Semua Berita</a>
-                    @foreach ($layoutNavigationCategories as $category)
-                        <a href="{{ route('categories.show', $category) }}" class="border-b-2 px-3 py-3 text-sm font-semibold whitespace-nowrap transition-colors {{ request()->routeIs('categories.show') && request()->route('category')?->is($category) ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">{{ $category->name }}</a>
-                    @endforeach
-                </nav>
+                <div class="relative hidden md:block">
+                    <nav class="flex flex-wrap items-center gap-x-0.5 overflow-visible">
+                        <a href="{{ route('home') }}" class="border-b-2 px-2.5 py-3 text-[13px] font-semibold whitespace-nowrap transition-colors lg:px-3 lg:text-sm {{ request()->routeIs('home') ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">Beranda</a>
+                        <a href="{{ route('posts.index') }}" class="border-b-2 px-2.5 py-3 text-[13px] font-semibold whitespace-nowrap transition-colors lg:px-3 lg:text-sm {{ request()->routeIs('posts.index') ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">Semua Berita</a>
+                        @foreach ($layoutNavigationCategories as $category)
+                            @php
+                                $isActive = $currentPath === trim($category->slugPath(), '/')
+                                    || str_starts_with($currentPath, trim($category->slugPath(), '/').'/');
+                            @endphp
+                            <div
+                                class="relative shrink-0"
+                                x-data="{
+                                    submenuOpen: false,
+                                    submenuStyle: '',
+                                    setPosition() {
+                                        const rect = this.$refs.trigger.getBoundingClientRect();
+                                        const panelWidth = 288;
+                                        const left = Math.min(
+                                            Math.max(16, rect.left),
+                                            window.innerWidth - panelWidth - 16,
+                                        );
+
+                                        this.submenuStyle = `top:${Math.round(rect.bottom + 6)}px;left:${Math.round(left)}px;width:${panelWidth}px;`;
+                                    },
+                                    openSubmenu() {
+                                        if (window.innerWidth < 768) {
+                                            return;
+                                        }
+
+                                        this.setPosition();
+                                        this.submenuOpen = true;
+                                    },
+                                    closeSubmenu() {
+                                        this.submenuOpen = false;
+                                    },
+                                }"
+                                x-on:mouseenter="openSubmenu()"
+                                x-on:mouseleave="closeSubmenu()"
+                                x-on:resize.window="if (submenuOpen) setPosition()"
+                                x-on:scroll.window="if (submenuOpen) setPosition()"
+                            >
+                                <a x-ref="trigger" href="{{ $category->publicUrl() }}" class="border-b-2 px-2.5 py-3 text-[13px] font-semibold whitespace-nowrap transition-colors lg:px-3 lg:text-sm {{ $isActive ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : 'border-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]' }}">
+                                    {{ $category->name }}
+                                </a>
+                                @if ($category->children->isNotEmpty())
+                                    <div
+                                        x-cloak
+                                        x-show="submenuOpen"
+                                        x-bind:style="submenuStyle"
+                                        x-transition:enter="transition ease-out duration-150"
+                                        x-transition:enter-start="opacity-0 -translate-y-1"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-100"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 -translate-y-1"
+                                        class="fixed z-[90]"
+                                    >
+                                        <div class="rounded-xl border border-[var(--color-border)] bg-white p-4 shadow-xl">
+                                            @include('blog.partials.category-nav-children', ['categories' => $category->children, 'depth' => 0, 'mobile' => false])
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </nav>
+                </div>
 
                 <div x-cloak x-show="open" class="border-t border-[var(--color-border)] py-3 md:hidden">
                     <form action="{{ route('posts.index') }}" method="GET" class="mb-3">
@@ -123,7 +197,10 @@
                         <a href="{{ route('home') }}" class="py-2 text-sm font-medium">Beranda</a>
                         <a href="{{ route('posts.index') }}" class="py-2 text-sm font-medium">Semua Berita</a>
                         @foreach ($layoutNavigationCategories as $category)
-                            <a href="{{ route('categories.show', $category) }}" class="py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">{{ $category->name }}</a>
+                            <a href="{{ $category->publicUrl() }}" class="py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]">{{ $category->name }}</a>
+                            @if ($category->children->isNotEmpty())
+                                @include('blog.partials.category-nav-children', ['categories' => $category->children, 'depth' => 1, 'mobile' => true])
+                            @endif
                         @endforeach
                     </div>
                 </div>
@@ -155,7 +232,7 @@
                         <h4 class="mb-4 text-sm font-bold uppercase tracking-wider text-[var(--color-primary)]">Kategori</h4>
                         <div class="grid grid-cols-2 gap-1">
                             @foreach ($layoutNavigationCategories->take(8) as $category)
-                                <a href="{{ route('categories.show', $category) }}" class="py-0.5 text-sm text-gray-400 transition-colors hover:text-white">{{ $category->name }}</a>
+                                <a href="{{ $category->publicUrl() }}" class="py-0.5 text-sm text-gray-400 transition-colors hover:text-white">{{ $category->name }}</a>
                             @endforeach
                         </div>
                     </div>

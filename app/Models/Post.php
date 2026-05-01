@@ -122,10 +122,7 @@ class Post extends Model
 
     public function publicUrl(): string
     {
-        return route('posts.show', [
-            'categoryPath' => $this->category_path,
-            'post' => $this,
-        ]);
+        return url('/'.trim($this->category_path.'/'.$this->slug, '/'));
     }
 
     // ──────────────────────────────────────────────

@@ -120,6 +120,29 @@
         color: #fff;
     }
 
+    .content-type-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 9999px;
+        background: color-mix(in srgb, var(--color-secondary) 8%, white);
+        padding: 0.18rem 0.5rem;
+        font-size: 0.64rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-secondary);
+    }
+
+    .content-type-badge-on-dark {
+        background: rgba(255, 255, 255, 0.16);
+        color: #fff;
+    }
+
+    .content-type-badge-compact {
+        padding: 0.14rem 0.42rem;
+        font-size: 0.58rem;
+    }
+
     .breadcrumb-separator::before {
         content: "›";
         color: var(--color-text-muted);
@@ -171,6 +194,15 @@
         width: 100%;
         border-radius: 0.75rem;
         margin: 1.5em 0;
+    }
+
+    .nav-scrollbar-hidden {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .nav-scrollbar-hidden::-webkit-scrollbar {
+        display: none;
     }
 }
 

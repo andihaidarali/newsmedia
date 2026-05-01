@@ -9,7 +9,6 @@ use App\Http\Controllers\Admin\PostController as AdminPostController;
 use App\Http\Controllers\Admin\SiteSettingController as AdminSiteSettingController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
@@ -21,7 +20,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PostController::class, 'index'])->name('home');
 Route::get('/blog', [PostController::class, 'index'])->name('posts.index');
-Route::get('/category/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/tag/{tag:slug}', [TagController::class, 'show'])->name('tags.show');
 
 // ──────────────────────────────────────────────
@@ -61,6 +59,5 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
-Route::get('/{categoryPath}/{post:slug}', [PostController::class, 'show'])
-    ->where('categoryPath', '.*')
-    ->name('posts.show');
+Route::get('/{path}', [PostController::class, 'resolvePath'])
+    ->where('path', '.*');

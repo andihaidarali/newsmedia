@@ -31,6 +31,8 @@ class UpdatePostRequest extends FormRequest
      */
     public function rules(): array
     {
+        $post = $this->route('post');
+
         return [
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'body' => ['sometimes', 'required', 'string'],
@@ -49,10 +51,25 @@ class UpdatePostRequest extends FormRequest
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:255'],
             'featured_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:2048'],
-            'youtube_url' => ['required_if:type,video', 'nullable', 'url', 'max:2048'],
-            'gallery_images' => ['required_if:type,gallery', 'nullable', 'array'],
+            'youtube_url' => [
+                Rule::requiredIf(fn () => $this->input('type') === 'video' && blank($post?->youtube_url)),
+                'nullable',
+                'url',
+                'max:2048',
+            ],
+            'gallery_images' => [
+                Rule::requiredIf(fn () => $this->input('type') === 'gallery' && blank($post?->gallery_images)),
+                'nullable',
+                'array',
+            ],
             'gallery_images.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
-            'infographic_image' => ['required_if:type,infographic', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+            'infographic_image' => [
+                Rule::requiredIf(fn () => $this->input('type') === 'infographic' && blank($post?->infographic_image)),
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp,gif',
+                'max:4096',
+            ],
             'status' => ['sometimes', 'required', 'in:draft,published,scheduled,archived'],
             'published_at' => [
                 Rule::requiredIf(fn () => $this->input('status') === 'scheduled'),
@@ -79,9 +96,9 @@ class UpdatePostRequest extends FormRequest
         return [
             'published_at.required_if' => 'A publish date is required when scheduling a post.',
             'featured_image.max' => 'The featured image must not exceed 2MB.',
-            'youtube_url.required_if' => 'A YouTube link is required for video posts.',
-            'gallery_images.required_if' => 'At least one gallery image is required for gallery posts.',
-            'infographic_image.required_if' => 'An infographic image is required for infographic posts.',
+            'youtube_url.required' => 'A YouTube link is required for video posts.',
+            'gallery_images.required' => 'At least one gallery image is required for gallery posts.',
+            'infographic_image.required' => 'An infographic image is required for infographic posts.',
             'new_advertorial_partner.required_with' => 'Kerjasama oleh wajib diisi saat membuat advertorial baru.',
             'new_advertorial_starts_at.required_with' => 'Awal kerjasama wajib diisi saat membuat advertorial baru.',
             'new_advertorial_ends_at.required_with' => 'Akhir kerjasama wajib diisi saat membuat advertorial baru.',

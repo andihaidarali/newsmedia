@@ -3,8 +3,14 @@
         <div class="mb-8">
             <nav class="mb-4 flex items-center text-sm text-[var(--color-text-muted)]">
                 <a href="{{ route('home') }}" class="hover:text-[var(--color-primary)]">Beranda</a>
-                <span class="mx-2 breadcrumb-separator"></span>
-                <span class="text-[var(--color-text-secondary)]">{{ $category->name }}</span>
+                @foreach ($category->ancestorsAndSelf() as $breadcrumbCategory)
+                    <span class="mx-2 breadcrumb-separator"></span>
+                    @if ($loop->last)
+                        <span class="text-[var(--color-text-secondary)]">{{ $breadcrumbCategory->name }}</span>
+                    @else
+                        <a href="{{ $breadcrumbCategory->publicUrl() }}" class="hover:text-[var(--color-primary)]">{{ $breadcrumbCategory->name }}</a>
+                    @endif
+                @endforeach
             </nav>
             <div class="flex items-center gap-3">
                 <span class="h-10 w-1.5 rounded-full bg-[var(--color-primary)]"></span>

@@ -17,32 +17,65 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // ── Create Users ─────────────────────────────
-        $admin = User::factory()->create([
+        $adminSeed = User::factory()->administrator()->make([
             'name' => 'Administrator',
             'email' => 'admin@example.com',
-            'role' => Role::ADMINISTRATOR,
         ]);
 
-        $editor = User::factory()->create([
+        $admin = User::query()->updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'name' => 'Administrator',
+                'role' => Role::ADMINISTRATOR,
+                'is_active' => true,
+                'email_verified_at' => $adminSeed->email_verified_at,
+                'password' => $adminSeed->password,
+                'remember_token' => $adminSeed->remember_token,
+            ],
+        );
+
+        $editorSeed = User::factory()->editor()->make([
             'name' => 'Editor',
             'email' => 'editor@example.com',
-            'role' => Role::EDITOR,
         ]);
 
-        $reporter = User::factory()->create([
+        $editor = User::query()->updateOrCreate(
+            ['email' => 'editor@example.com'],
+            [
+                'name' => 'Editor',
+                'role' => Role::EDITOR,
+                'is_active' => true,
+                'email_verified_at' => $editorSeed->email_verified_at,
+                'password' => $editorSeed->password,
+                'remember_token' => $editorSeed->remember_token,
+            ],
+        );
+
+        $reporterSeed = User::factory()->reporter()->make([
             'name' => 'Reporter',
             'email' => 'reporter@example.com',
-            'role' => Role::REPORTER,
         ]);
+
+        $reporter = User::query()->updateOrCreate(
+            ['email' => 'reporter@example.com'],
+            [
+                'name' => 'Reporter',
+                'role' => Role::REPORTER,
+                'is_active' => true,
+                'email_verified_at' => $reporterSeed->email_verified_at,
+                'password' => $reporterSeed->password,
+                'remember_token' => $reporterSeed->remember_token,
+            ],
+        );
 
         // ── Create Categories ────────────────────────
         $parentCategories = collect([
             'Technology', 'Business', 'Lifestyle', 'Health',
             'Education', 'Entertainment', 'Sports', 'Science',
-        ])->map(fn ($name, $index) => Category::factory()->create([
-            'name' => $name,
-            'sort_order' => $index,
-        ]));
+        ])->map(fn ($name, $index) => Category::query()->firstOrCreate(
+            ['name' => $name, 'parent_id' => null],
+            ['sort_order' => $index],
+        ));
 
         // Create some sub-categories
         $subCategories = [
@@ -54,9 +87,10 @@ class DatabaseSeeder extends Seeder
         foreach ($subCategories as $parentName => $children) {
             $parent = $parentCategories->firstWhere('name', $parentName);
             foreach ($children as $childName) {
-                Category::factory()->child($parent)->create([
-                    'name' => $childName,
-                ]);
+                Category::query()->firstOrCreate(
+                    ['name' => $childName, 'parent_id' => $parent?->id],
+                    ['sort_order' => 0],
+                );
             }
         }
 
@@ -68,25 +102,29 @@ class DatabaseSeeder extends Seeder
             'Tutorial', 'Tips & Tricks', 'News', 'Opinion', 'Review',
             'Guide', 'Beginner', 'Advanced', 'API', 'Database',
             'Frontend', 'Backend', 'DevOps', 'Mobile', 'AI',
-        ])->map(fn ($name) => Tag::factory()->create(['name' => $name]));
+        ])->map(fn ($name) => Tag::query()->firstOrCreate(['name' => $name]));
 
         // ── Create Posts ─────────────────────────────
-        Post::factory()
-            ->count(40)
-            ->sequence(fn () => [
-                'user_id' => $admin->id,
-                'category_id' => $allCategories->random()->id,
-            ])
-            ->create()
-            ->each(function (Post $post) use ($tags) {
-                // Attach 1-4 random tags to each post
-                $post->tags()->attach(
-                    $tags->random(rand(1, 4))->pluck('id')->toArray()
-                );
-            });
+        if (! Post::query()->exists()) {
+            Post::factory()
+                ->count(40)
+                ->sequence(fn () => [
+                    'user_id' => $admin->id,
+                    'category_id' => $allCategories->random()->id,
+                ])
+                ->create()
+                ->each(function (Post $post) use ($tags) {
+                    $post->tags()->attach(
+                        $tags->random(rand(1, 4))->pluck('id')->toArray()
+                    );
+                });
+        }
+
+        $this->call(PostTypeSeeder::class);
 
         $this->command->info('✅ Seeded: 1 admin, '
             .$allCategories->count().' categories, '
-            .$tags->count().' tags, 40 posts');
+            .$tags->count().' tags, '
+            .Post::count().' posts including typed content');
     }
 }

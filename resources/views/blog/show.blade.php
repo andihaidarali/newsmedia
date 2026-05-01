@@ -1,4 +1,21 @@
-<x-public-layout :title="$post->meta_title ?: $post->title" :description="$post->meta_description ?: $post->readable_excerpt" :latest-posts="$latestPosts">
+@php
+    $resolvedPostImage = match ($post->type) {
+        'video' => (function () use ($post) {
+            if (! filled($post->youtube_url)) {
+                return null;
+            }
+
+            preg_match('/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]+)/', $post->youtube_url, $matches);
+            $videoId = $matches[1] ?? null;
+
+            return $videoId ? "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg" : null;
+        })(),
+        'infographic' => $post->infographic_image ? \Illuminate\Support\Facades\Storage::disk('public')->url($post->infographic_image) : null,
+        default => $post->featured_image_url,
+    };
+@endphp
+
+<x-public-layout :title="$post->meta_title ?: $post->title" :description="$post->meta_description ?: $post->readable_excerpt" :latest-posts="$latestPosts" :image="$resolvedPostImage">
     @php
         $writerNames = $post->writerCredits->pluck('name')->filter()->unique()->values();
     @endphp
@@ -6,11 +23,13 @@
     <main class="mx-auto max-w-7xl px-4 py-6">
         <nav class="mb-6 flex items-center text-sm text-[var(--color-text-muted)]">
             <a href="{{ route('home') }}" class="hover:text-[var(--color-primary)] transition-colors">Beranda</a>
-            <span class="mx-2 breadcrumb-separator"></span>
             @if ($post->category)
-                <a href="{{ route('categories.show', $post->category) }}" class="hover:text-[var(--color-primary)] transition-colors">{{ $post->category->name }}</a>
-                <span class="mx-2 breadcrumb-separator"></span>
+                @foreach ($post->category->ancestorsAndSelf() as $breadcrumbCategory)
+                    <span class="mx-2 breadcrumb-separator"></span>
+                    <a href="{{ $breadcrumbCategory->publicUrl() }}" class="hover:text-[var(--color-primary)] transition-colors">{{ $breadcrumbCategory->name }}</a>
+                @endforeach
             @endif
+            <span class="mx-2 breadcrumb-separator"></span>
             <span class="line-clamp-1 text-[var(--color-text-secondary)]">{{ $post->title }}</span>
         </nav>
 
@@ -56,7 +75,7 @@
                     </a>
                 </div>
 
-                @if ($post->featured_image_url)
+                @if ($post->type === 'article' && $post->featured_image_url)
                     <figure class="mb-8">
                         <img src="{{ $post->featured_image_url }}" alt="{{ $post->title }}" class="w-full rounded-xl shadow-md">
                         @if ($post->excerpt)
@@ -77,16 +96,95 @@
                     @endif
                 @endif
 
+                @if ($post->type === 'infographic' && $post->infographic_image)
+                    @php
+                        $infographicUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($post->infographic_image);
+                    @endphp
+                    <figure class="mb-8">
+                        <img src="{{ $infographicUrl }}" alt="{{ $post->title }}" class="w-full rounded-xl shadow-md">
+                        @if ($post->excerpt)
+                            <figcaption class="mt-2 text-center text-xs italic text-[var(--color-text-muted)]">{{ $post->excerpt }}</figcaption>
+                        @endif
+                    </figure>
+                @endif
+
                 @if ($post->type === 'gallery' && filled($post->gallery_images))
-                    <div class="mb-8 grid grid-cols-2 gap-2 overflow-hidden rounded-xl md:grid-cols-3">
-                        @foreach ($post->gallery_images as $image)
-                            @php
-                                $galleryUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($image);
-                            @endphp
-                            <div class="aspect-square overflow-hidden">
-                                <img src="{{ $galleryUrl }}" alt="{{ $post->title }}" class="h-full w-full object-cover transition-transform duration-500 hover:scale-110">
+                    @php
+                        $gallerySlides = collect($post->gallery_images)
+                            ->map(fn ($image) => \Illuminate\Support\Facades\Storage::disk('public')->url($image))
+                            ->values();
+                    @endphp
+                    <div
+                        class="mb-8"
+                        x-data="{
+                            currentSlide: 0,
+                            totalSlides: {{ $gallerySlides->count() }},
+                            touchStartX: null,
+                            touchEndX: null,
+                            previousSlide() {
+                                this.currentSlide = this.currentSlide === 0 ? this.totalSlides - 1 : this.currentSlide - 1;
+                            },
+                            nextSlide() {
+                                this.currentSlide = this.currentSlide === this.totalSlides - 1 ? 0 : this.currentSlide + 1;
+                            },
+                            handleTouchStart(event) {
+                                this.touchStartX = event.changedTouches[0]?.clientX ?? null;
+                                this.touchEndX = null;
+                            },
+                            handleTouchEnd(event) {
+                                this.touchEndX = event.changedTouches[0]?.clientX ?? null;
+
+                                if (this.touchStartX === null || this.touchEndX === null) {
+                                    return;
+                                }
+
+                                const swipeDistance = this.touchStartX - this.touchEndX;
+
+                                if (Math.abs(swipeDistance) < 40) {
+                                    return;
+                                }
+
+                                if (swipeDistance > 0) {
+                                    this.nextSlide();
+
+                                    return;
+                                }
+
+                                this.previousSlide();
+                            },
+                        }"
+                    >
+                        <div class="relative overflow-hidden rounded-xl bg-[var(--color-surface-darker)]" x-on:touchstart.passive="handleTouchStart($event)" x-on:touchend.passive="handleTouchEnd($event)">
+                            @foreach ($gallerySlides as $galleryUrl)
+                                <div x-show="currentSlide === {{ $loop->index }}" x-transition.opacity class="aspect-[16/10]">
+                                    <img src="{{ $galleryUrl }}" alt="{{ $post->title }} - slide {{ $loop->iteration }}" class="h-full w-full object-cover">
+                                </div>
+                            @endforeach
+
+                            @if ($gallerySlides->count() > 1)
+                                <button type="button" x-on:click="previousSlide()" class="absolute left-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75" aria-label="Previous image">
+                                    <span class="text-lg leading-none">&#8249;</span>
+                                </button>
+                                <button type="button" x-on:click="nextSlide()" class="absolute right-3 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75" aria-label="Next image">
+                                    <span class="text-lg leading-none">&#8250;</span>
+                                </button>
+                                <div class="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/45 px-3 py-1">
+                                    @foreach ($gallerySlides as $galleryUrl)
+                                        <button type="button" x-on:click="currentSlide = {{ $loop->index }}" class="h-2.5 w-2.5 rounded-full transition" x-bind:class="currentSlide === {{ $loop->index }} ? 'bg-white' : 'bg-white/45'" aria-label="Go to image {{ $loop->iteration }}"></button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
+                        @if ($gallerySlides->count() > 1)
+                            <div class="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5">
+                                @foreach ($gallerySlides as $galleryUrl)
+                                    <button type="button" x-on:click="currentSlide = {{ $loop->index }}" class="overflow-hidden rounded-lg border transition" x-bind:class="currentSlide === {{ $loop->index }} ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20' : 'border-transparent'">
+                                        <img src="{{ $galleryUrl }}" alt="{{ $post->title }} thumbnail {{ $loop->iteration }}" class="aspect-square h-full w-full object-cover">
+                                    </button>
+                                @endforeach
                             </div>
-                        @endforeach
+                        @endif
                     </div>
                 @endif
 

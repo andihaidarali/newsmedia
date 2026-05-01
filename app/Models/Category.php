@@ -54,7 +54,9 @@ class Category extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(Category::class, 'parent_id');
+        return $this->hasMany(Category::class, 'parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name');
     }
 
     /**
@@ -84,6 +86,38 @@ class Category extends Model
             ->pluck('slug')
             ->filter()
             ->implode('/');
+    }
+
+    public function publicUrl(): string
+    {
+        return url('/'.$this->slugPath());
+    }
+
+    public static function findBySlugPath(string $path): ?self
+    {
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if ($segments === []) {
+            return null;
+        }
+
+        $category = static::query()
+            ->whereNull('parent_id')
+            ->where('slug', $segments[0])
+            ->first();
+
+        foreach (array_slice($segments, 1) as $segment) {
+            if (! $category) {
+                return null;
+            }
+
+            $category = static::query()
+                ->where('parent_id', $category->id)
+                ->where('slug', $segment)
+                ->first();
+        }
+
+        return $category;
     }
 
     public function descendantsAndSelf(): Collection

@@ -17,6 +17,33 @@ class PostController extends Controller
         return $url.(str_contains($url, '?') ? '&' : '?').'load_more=1';
     }
 
+    protected function renderCategoryPage(Request $request, Category $category)
+    {
+        $category->load('descendants');
+
+        $posts = Post::published()
+            ->whereIn('category_id', $category->descendantsAndSelf()->pluck('id'))
+            ->with(['author', 'category.parent', 'tags'])
+            ->latest('published_at')
+            ->simplePaginate(5)
+            ->withQueryString();
+
+        $latestPosts = Post::published()
+            ->with(['author', 'category.parent', 'tags'])
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
+
+        if ($request->boolean('load_more')) {
+            return response()->json([
+                'html' => view('blog.partials.post-list-items', ['posts' => $posts])->render(),
+                'next_page_url' => $this->loadMoreUrl($posts->nextPageUrl()),
+            ]);
+        }
+
+        return view('blog.category', compact('category', 'posts', 'latestPosts'));
+    }
+
     /**
      * Display the blog listing page.
      */
@@ -24,7 +51,7 @@ class PostController extends Controller
     {
         $search = trim((string) $request->query('q', ''));
 
-        $headlinePost = Post::published()
+        $headlinePosts = Post::published()
             ->with(['author', 'category.parent', 'tags'])
             ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search) {
                 $query->where('title', 'like', "%{$search}%")
@@ -32,7 +59,10 @@ class PostController extends Controller
                     ->orWhere('body', 'like', "%{$search}%");
             }))
             ->latest('published_at')
-            ->first();
+            ->limit(5)
+            ->get();
+
+        $headlinePost = $headlinePosts->first();
 
         $posts = Post::published()
             ->with(['author', 'category.parent', 'tags'])
@@ -74,6 +104,34 @@ class PostController extends Controller
             ->limit(5)
             ->get();
 
+        $videoPosts = collect();
+        $galleryPosts = collect();
+        $infographicPosts = collect();
+
+        if ($search === '') {
+            $videoPosts = Post::published()
+                ->where('type', 'video')
+                ->with(['author', 'category.parent', 'tags'])
+                ->latest('published_at')
+                ->limit(4)
+                ->get();
+
+            $galleryPosts = Post::published()
+                ->where('type', 'gallery')
+                ->with(['author', 'category.parent', 'tags'])
+                ->latest('published_at')
+                ->limit(4)
+                ->get();
+
+            $infographicPosts = Post::published()
+                ->where('type', 'infographic')
+                ->whereNotNull('featured_image')
+                ->with(['author', 'category.parent', 'tags'])
+                ->latest('published_at')
+                ->limit(5)
+                ->get();
+        }
+
         if ($request->boolean('load_more')) {
             return response()->json([
                 'html' => view('blog.partials.post-list-items', ['posts' => $posts])->render(),
@@ -81,7 +139,36 @@ class PostController extends Controller
             ]);
         }
 
-        return view('blog.index', compact('posts', 'categories', 'headlinePost', 'categorySections', 'latestPosts', 'search'));
+        return view('blog.index', compact('posts', 'categories', 'headlinePost', 'headlinePosts', 'categorySections', 'latestPosts', 'search', 'videoPosts', 'galleryPosts', 'infographicPosts'));
+    }
+
+    public function resolvePath(Request $request, string $path)
+    {
+        $path = trim($path, '/');
+
+        abort_if($path === '', 404);
+
+        $category = Category::findBySlugPath($path);
+
+        if ($category) {
+            return $this->renderCategoryPage($request, $category);
+        }
+
+        $segments = array_values(array_filter(explode('/', $path)));
+
+        if (count($segments) < 2) {
+            abort(404);
+        }
+
+        $postSlug = array_pop($segments);
+        $categoryPath = implode('/', $segments);
+
+        $post = Post::query()
+            ->where('slug', $postSlug)
+            ->with(['author', 'category.parent', 'tags', 'writerCredits'])
+            ->firstOrFail();
+
+        return $this->show($categoryPath, $post);
     }
 
     /**

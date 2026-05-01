@@ -48,7 +48,7 @@
                             <x-input-error :messages="$errors->get('published_at')" class="mt-2" />
                         </div>
 
-                        <div>
+                        <div x-show="postType === 'article' || postType === 'gallery'" x-cloak>
                             <x-input-label for="featured_image" value="Featured Image" />
                             <input id="featured_image" name="featured_image" type="file" accept="image/*" class="mt-1 block w-full text-sm text-gray-700 file:mb-2 file:mr-4 file:rounded-md file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-gray-700 hover:file:bg-gray-200 dark:text-gray-200">
                             <x-input-error :messages="$errors->get('featured_image')" class="mt-2" />

@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
 
             if (Schema::hasTable('categories')) {
                 $navigationCategories = Category::query()
+                    ->with('descendants')
                     ->whereNull('parent_id')
                     ->orderBy('sort_order')
                     ->orderBy('name')

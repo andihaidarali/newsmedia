@@ -1,6 +1,7 @@
 @props([
     'latestPosts' => collect(),
     'popularPosts' => collect(),
+    'infographicPosts' => collect(),
 ])
 
 @php
@@ -59,6 +60,49 @@
                         @include('blog.partials.post-card', ['post' => $post, 'compact' => true])
                     @endforeach
                 </div>
+            </div>
+        @endif
+
+        @if ($infographicPosts->isNotEmpty())
+            <div class="rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm" x-data="{ currentSlide: 0, totalSlides: {{ $infographicPosts->count() }} }">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                    <h3 class="text-base font-black text-[var(--color-secondary)]">Infografis</h3>
+                    <span class="content-type-badge">Infografis</span>
+                </div>
+
+                <div class="relative overflow-hidden rounded-xl bg-[var(--color-surface-darker)]">
+                    @foreach ($infographicPosts as $post)
+                        <article x-show="currentSlide === {{ $loop->index }}" x-transition.opacity class="group">
+                            <a href="{{ $post->publicUrl() }}" class="block">
+                                <img src="{{ $post->featured_image_url }}" alt="{{ $post->title }}" class="aspect-[16/10] h-full w-full object-cover">
+                                <div class="space-y-2 p-4">
+                                    <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)]">{{ $post->category?->name ?? 'News' }}</div>
+                                    <h4 class="line-clamp-2 text-sm font-bold leading-snug text-[var(--color-text-primary)] transition-colors group-hover:text-[var(--color-primary)]">
+                                        {{ $post->title }}
+                                    </h4>
+                                    <div class="text-[11px] text-[var(--color-text-muted)]">{{ $post->published_at?->translatedFormat('d M Y') }}</div>
+                                </div>
+                            </a>
+                        </article>
+                    @endforeach
+
+                    @if ($infographicPosts->count() > 1)
+                        <button type="button" x-on:click="currentSlide = currentSlide === 0 ? totalSlides - 1 : currentSlide - 1" class="absolute left-3 top-28 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75" aria-label="Previous infographic">
+                            <span class="text-lg leading-none">&#8249;</span>
+                        </button>
+                        <button type="button" x-on:click="currentSlide = currentSlide === totalSlides - 1 ? 0 : currentSlide + 1" class="absolute right-3 top-28 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white transition hover:bg-black/75" aria-label="Next infographic">
+                            <span class="text-lg leading-none">&#8250;</span>
+                        </button>
+                    @endif
+                </div>
+
+                @if ($infographicPosts->count() > 1)
+                    <div class="mt-4 flex items-center justify-center gap-2">
+                        @foreach ($infographicPosts as $post)
+                            <button type="button" x-on:click="currentSlide = {{ $loop->index }}" class="h-2.5 w-2.5 rounded-full transition" x-bind:class="currentSlide === {{ $loop->index }} ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-border)]'" aria-label="Go to infographic {{ $loop->iteration }}"></button>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         @endif
     </div>

@@ -454,3 +454,31 @@ it('can create each supported post type', function () {
     expect(Post::where('title', 'Gallery Post')->firstOrFail()->gallery_images)->toHaveCount(2);
     expect(Post::where('title', 'Infographic Post')->firstOrFail()->infographic_image)->not->toBeNull();
 });
+
+it('allows editing an infographic post without re-uploading the infographic image', function () {
+    Storage::fake('public');
+
+    $editor = User::factory()->editor()->create();
+    Storage::disk('public')->put('posts/infographics/existing-info.png', 'existing-image');
+
+    $post = Post::factory()->create([
+        'user_id' => $editor->id,
+        'type' => 'infographic',
+        'title' => 'Existing Infographic Post',
+        'body' => '<p>Old body</p>',
+        'status' => 'draft',
+        'infographic_image' => 'posts/infographics/existing-info.png',
+    ]);
+
+    $this->actingAs($editor)
+        ->patch(route('admin.posts.update', $post), [
+            'title' => 'Existing Infographic Post',
+            'body' => '<p>Updated body</p>',
+            'type' => 'infographic',
+            'status' => 'draft',
+        ])
+        ->assertRedirect(route('admin.posts.index'));
+
+    expect($post->fresh()->infographic_image)->toBe('posts/infographics/existing-info.png');
+    Storage::disk('public')->assertExists('posts/infographics/existing-info.png');
+});
